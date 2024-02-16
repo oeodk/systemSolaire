@@ -42,7 +42,7 @@ void systemSolaire::initializeGL()
     loadShader(trajectory_program_, "orbit_vertexshader.glsl", "orbit_fragmentshader.glsl");
     
     loadShader(star_program_, "star_vertexshader.glsl", "star_fragmentshader.glsl");
-    
+
     loadShader(shadow_program_, "shadow_vertexshader.glsl", "shadow_fragmentshader.glsl", "shadow_geometryshader.glsl");
 
     glGenVertexArrays(1, &trajectory_vao_);
@@ -190,7 +190,7 @@ void systemSolaire::initializeGL()
         tmp_view.setToIdentity();
         tmp_view.lookAt(lightPos, lightPos + look_dir[i], top_dir[i]);
         shadowTransforms[i] = shadowProj * tmp_view;
-    }
+}
     // Export all matrices to shader
     glUseProgram(shadow_program_);
     glUniformMatrix4fv(glGetUniformLocation(shadow_program_, "shadowMatrices[0]"), 1, GL_FALSE, shadowTransforms[0].data());
@@ -266,17 +266,32 @@ void systemSolaire::paintGL()
 
     glClear(GL_DEPTH_BUFFER_BIT);
     drawPlanetsShadow();
-    
+
     drawStars();
     drawPlanets();
     drawOrbits();
-    
+
     auto err = glGetError();
     if (err != GL_NONE)
     {
         qDebug() << err;
     }
+    glUseProgram(trajectory_program_);
+    glBindVertexArray(trajectory_vao_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, trajectory_ebo_);
 
+    glUniformMatrix4fv(u_traj_model_, 1, GL_FALSE, model_.data());
+    glUniformMatrix4fv(u_traj_view_, 1, GL_FALSE, view_.data());
+    glUniformMatrix4fv(u_traj_projection_, 1, GL_FALSE, projection_.data());
+
+    glUniform1fv(u_traj_dist_, 9, dist_);
+    glUniform2fv(u_traj_center_, 9, center_->data());
+
+    glDrawElements(GL_TRIANGLES, INDICES_.size(), GL_UNSIGNED_INT, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    
     glUseProgram(0);
 }
 
