@@ -29,6 +29,7 @@ protected :
     void keyPressEvent(QKeyEvent* event) override;
 private:
     std::string loadShaderSource(const std::string& filename);
+
     void loadShader(GLuint& program, const std::string& vertex_shader_path, const std::string& frag_shader_path);
     void loadShader(GLuint& program, const std::string& vertex_shader_path, const std::string& frag_shader_path, const std::string& geometry_shader_path);
     void updatePlanets();
@@ -64,7 +65,7 @@ private:
 
     GLuint shaderProgram_;
 
-    GLint u_planet_pos_, u_planet_color_, u_planet_radius_, u_planet_rotation_;
+    GLint u_planet_pos_, u_planet_color_, u_planet_radius_, u_planet_rotation_, u_planet_texture_;
     GLint u_model_, u_view_, u_projection_;
 
     GLint u_material_ambient_, u_material_diffuse_, u_material_specular_, u_material_shininess_;

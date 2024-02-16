@@ -5,6 +5,9 @@ out vec4 FragColor;
 in vec3 FragPos;
 in vec3 Normal;
 
+in vec2 texCoord;  // Coordonnées de texture du fragment
+
+
 struct Material {
     vec3 ambient;
     vec3 diffuse;
@@ -15,6 +18,9 @@ struct Material {
 uniform vec3 lightPosition;
 uniform vec3 lightColor;
 uniform vec3 cam_pos;
+
+uniform sampler2D textureSampler;
+
 
 uniform vec3 color;
 
@@ -69,7 +75,10 @@ void main()
 	// Average shadow
 	shadow /= pow((sampleRadius * 2 + 1), 3.25);
 	
+	vec4 textureColor = texture(textureSampler, texCoord);
+
+	
     vec3 result = (ambient + diffuse * (1.f - shadow) + specular * (1.f - shadow)) * lightColor * color;
     //vec3 result = (ambient + diffuse + specular) * lightColor * color;
-    FragColor = vec4(result, 1.0);
+    FragColor = vec4(result, 1.0) * textureColor;
 }

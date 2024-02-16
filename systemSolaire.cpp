@@ -42,7 +42,7 @@ void systemSolaire::initializeGL()
     loadShader(trajectory_program_, "orbit_vertexshader.glsl", "orbit_fragmentshader.glsl");
     
     loadShader(star_program_, "star_vertexshader.glsl", "star_fragmentshader.glsl");
-    
+
     loadShader(shadow_program_, "shadow_vertexshader.glsl", "shadow_fragmentshader.glsl", "shadow_geometryshader.glsl");
 
     glGenVertexArrays(1, &trajectory_vao_);
@@ -76,16 +76,16 @@ void systemSolaire::initializeGL()
     mat.shininess = 32;
 
     planets_.reserve(9);
-    planets_.push_back(new Planet(0.0f,  5.0f , 0.0f     , 0.0f     , QVector3D(240, 198, 29) , mat));
-    planets_.push_back(new Planet(7.5f,  0.50f, 58.646f  , 87.969f  , QVector3D(200, 248, 242), mat));
-    planets_.push_back(new Planet(10.0f, 0.90f, -243.018f, 224.701f , QVector3D(255, 255, 242), mat));
-    planets_.push_back(new Planet(13.0f, 0.90f, 0.997f   , 365.256f , QVector3D(11 , 92 , 227), mat));
-    planets_.push_back(new Planet(17.5f, 1.50f, 1.025f   , 686.960f , QVector3D(247, 115, 12) , mat));
-    planets_.push_back(new Planet(27.0f, 3.00f, 0.413f   , 935.354f , QVector3D(253, 199, 145), mat));
-    planets_.push_back(new Planet(35.0f, 2.50f, 0.448f   , 1757.736f, QVector3D(200, 196, 251), mat));
-    planets_.push_back(new Planet(40.5f, 1.50f, -0.718f  , 3687.150f, QVector3D(198, 241, 245), mat));
-    planets_.push_back(new Planet(45.0f, 1.50f, 0.671f   , 6224.903f, QVector3D(57 , 182, 247), mat));
-    planets_.push_back(new Moon(1.5f, 0.3f, 0.671f, 50.f, QVector3D(240, 240, 240), planets_[3], mat));
+    planets_.push_back(new Planet(0.0f,  5.0f , 5.f      , 0.0f     , "textures/soleil.jpg", mat));
+    planets_.push_back(new Planet(7.5f,  0.50f, 58.646f  , 87.969f  , "textures/mercure.jpg", mat));
+    planets_.push_back(new Planet(10.0f, 0.90f, -243.018f, 224.701f , "textures/venus.jpg", mat));
+    planets_.push_back(new Planet(13.0f, 0.90f, 0.997f   , 365.256f , "textures/terre.jpg", mat));
+    planets_.push_back(new Planet(17.5f, 1.50f, 1.025f   , 686.960f , "textures/mars.jpg", mat));
+    planets_.push_back(new Planet(27.0f, 3.00f, 0.413f   , 935.354f , "textures/jupiter.jpg", mat));
+    planets_.push_back(new Planet(35.0f, 2.50f, 0.448f   , 1757.736f, "textures/saturne.jpg", mat));
+    planets_.push_back(new Planet(40.5f, 1.50f, -0.718f  , 3687.150f, "textures/uranus.jpg", mat));
+    planets_.push_back(new Planet(45.0f, 1.50f, 0.671f   , 6224.903f, "textures/neptune.jpg", mat));
+    planets_.push_back(new Moon(1.5f, 0.3f, 0.671f, 50.f, "textures/lune.jpg", planets_[3], mat));
 
     planets_[0]->invertLight();
 
@@ -101,6 +101,7 @@ void systemSolaire::initializeGL()
     u_planet_radius_ = glGetUniformLocation(shaderProgram_, "radius");
     u_planet_color_ = glGetUniformLocation(shaderProgram_, "color");
     u_planet_rotation_ = glGetUniformLocation(shaderProgram_, "rotation");
+    u_planet_texture_ = glGetUniformLocation(shaderProgram_, "textureSampler");
 
     u_model_ = glGetUniformLocation(shaderProgram_, "model");
     u_view_ = glGetUniformLocation(shaderProgram_, "view");
@@ -190,7 +191,7 @@ void systemSolaire::initializeGL()
         tmp_view.setToIdentity();
         tmp_view.lookAt(lightPos, lightPos + look_dir[i], top_dir[i]);
         shadowTransforms[i] = shadowProj * tmp_view;
-    }
+}
     // Export all matrices to shader
     glUseProgram(shadow_program_);
     glUniformMatrix4fv(glGetUniformLocation(shadow_program_, "shadowMatrices[0]"), 1, GL_FALSE, shadowTransforms[0].data());
@@ -266,17 +267,32 @@ void systemSolaire::paintGL()
 
     glClear(GL_DEPTH_BUFFER_BIT);
     drawPlanetsShadow();
-    
+
     drawStars();
     drawPlanets();
     drawOrbits();
-    
+
     auto err = glGetError();
     if (err != GL_NONE)
     {
         qDebug() << err;
     }
+    glUseProgram(trajectory_program_);
+    glBindVertexArray(trajectory_vao_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, trajectory_ebo_);
 
+    glUniformMatrix4fv(u_traj_model_, 1, GL_FALSE, model_.data());
+    glUniformMatrix4fv(u_traj_view_, 1, GL_FALSE, view_.data());
+    glUniformMatrix4fv(u_traj_projection_, 1, GL_FALSE, projection_.data());
+
+    glUniform1fv(u_traj_dist_, 9, dist_);
+    glUniform2fv(u_traj_center_, 9, center_->data());
+
+    glDrawElements(GL_TRIANGLES, INDICES_.size(), GL_UNSIGNED_INT, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    
     glUseProgram(0);
 }
 
@@ -439,6 +455,8 @@ void systemSolaire::loadShader(GLuint& program, const std::string& vertex_shader
     glUseProgram(0);
 }
 
+
+
 void systemSolaire::updataCamPos()
 {
     //cam_pos_ = QVector3D(0.0f, CAM_DISTANCE_ * std::sin(cam_angle_), CAM_DISTANCE_ * std::cos(cam_angle_));
@@ -452,7 +470,9 @@ void systemSolaire::drawPlanets()
     glUseProgram(shaderProgram_);
     for (const auto& planet : planets_)
     {
+        glActiveTexture(GL_TEXTURE1);
 
+        planet->bindTexture();
         glBindVertexArray(planet->getVao());
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, planet->getEbo());
         glUniformMatrix4fv(u_model_, 1, GL_FALSE, model_.data());
@@ -478,7 +498,11 @@ void systemSolaire::drawPlanets()
 
         glUniform1i(u_invert_light_, planet->getInvertLight());
 
+        glUniform1i(u_planet_texture_,1);
+
+
         glDrawElements(GL_TRIANGLES, planet->getIndicesSize(), GL_UNSIGNED_INT, 0);
+        planet->releaseTexture();
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
     }

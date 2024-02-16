@@ -2,7 +2,7 @@
 #define _USE_MATH_DEFINES
 #include <iostream>
 
-Planet::Planet(float dist, float radius, float per_rotation, float per_revolution, const QVector3D& color, const Material& material)
+Planet::Planet(float dist, float radius, float per_rotation, float per_revolution, const QString& texture_path, const Material& material)
     : dist_(dist), radius_(radius), per_rotation_(per_rotation), per_revoltion_(per_revolution), invert_light_(false)
 {
     initializeOpenGLFunctions();
@@ -10,9 +10,11 @@ Planet::Planet(float dist, float radius, float per_rotation, float per_revolutio
     rotation_angle_ = 0;
     material_ = material;
 
-    color_[0] = color.x() / 255.f;
-    color_[1] = color.y() / 255.f;
-    color_[2] = color.z() / 255.f;
+    loadTexture(texture_path);
+
+    color_[0] = 1.f;
+    color_[1] = 1.f;
+    color_[2] = 1.f;
     if (vertices_.size() == 0)
     {
         createSphere(1, 20);
@@ -28,10 +30,18 @@ Planet::Planet(float dist, float radius, float per_rotation, float per_revolutio
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof(unsigned int), indices_.data(), GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     }
     
 }
+
+Planet::~Planet()
+{
+    glDeleteTextures(1, &text_location_);
+}
+
 
 void Planet::update(float timeElapsed)
 {
@@ -55,6 +65,34 @@ QMatrix4x4 Planet::getSelfRotation()
     QMatrix4x4 self_rotation;
     self_rotation.rotate(rotation_angle_, 0, 0, 1);
     return self_rotation;
+}
+
+void Planet::loadTexture(const QString& filename) 
+{
+    QImage image;
+    if (!image.load(":/systemSolaire/" + filename))
+    {
+        // Gestion de l'erreur si le chargement de l'image a échoué
+        qDebug() << "Texture " + filename + " could not load";
+        return;
+    }
+
+    // Conversion de l'image en format compatible OpenGL
+    image = image.convertToFormat(QImage::Format_RGBA8888);
+
+    glGenTextures(1, &text_location_);
+    glBindTexture(GL_TEXTURE_2D, text_location_);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // Configures the way the texture repeats (if it does at all)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexImage2D(GL_TEXTURE_2D, 0, 4, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void Planet::createSphere(float radius, int segments)
@@ -89,11 +127,13 @@ void Planet::createSphere(float radius, int segments)
                 z = radius * cosTheta;
             }
 
+
             vertices_.push_back(x);
             vertices_.push_back(y);
             vertices_.push_back(z);
 
-
+            vertices_.push_back(lon / float(segments));
+            vertices_.push_back(lat / float(segments));
         }
     }
 

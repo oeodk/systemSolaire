@@ -1,4 +1,15 @@
 <RCC>
-    <qresource prefix="systemSolaire">
+    <qresource prefix="/systemSolaire">
+        <file>textures/jupiter.jpg</file>
+        <file>textures/lune.jpg</file>
+        <file>textures/mars.jpg</file>
+        <file>textures/mercure.jpg</file>
+        <file>textures/neptune.jpg</file>
+        <file>textures/saturne.jpg</file>
+        <file>textures/soleil.jpg</file>
+        <file>textures/terre.jpg</file>
+        <file>textures/tesla.jpg</file>
+        <file>textures/uranus.jpg</file>
+        <file>textures/venus.jpg</file>
     </qresource>
 </RCC>
